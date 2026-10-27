@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: cs2-bomb-mode-arena-v25
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
