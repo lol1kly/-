@@ -7,7 +7,7 @@ const { WebSocketServer, WebSocket } = require('ws');
 
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
-const ROOT = path.join(__dirname, 'public');
+const ROOT = __dirname;
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'users.json');
 fs.mkdirSync(DATA_DIR, { recursive: true });
