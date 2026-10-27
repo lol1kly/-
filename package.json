@@ -1,0 +1,16 @@
+{
+  "name": "cs2-bomb-mode-arena-online",
+  "version": "31.0.0",
+  "private": true,
+  "description": "CS2 Bomb Mode Arena browser game with 1v1 matchmaking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
