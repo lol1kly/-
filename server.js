@@ -45,10 +45,11 @@ function roomSnapshot(room) {
   return { code: room.code, mode: room.mode, maxPlayers: room.maxPlayers, players: [...room.players].map(name => ({ username: name, online: [...clients.entries()].some(([ws,c]) => ws.readyState === WebSocket.OPEN && c.username === name && c.roomCode === room.code) })) };
 }
 function broadcastRoom(room) { const state = { type: 'room_state', room: roomSnapshot(room) }; for (const [ws,c] of clients) if (c.roomCode === room.code) send(ws, state); }
+function broadcastPositions(room) { const state = { type: 'player_states', players: Object.entries(room.positions).map(([username,p]) => ({ username, ...p })) }; for (const [ws,c] of clients) if (c.roomCode === room.code) send(ws, state); }
 function leaveRoom(ws) {
   const c = clients.get(ws); if (!c || !c.roomCode) return;
   const room = rooms.get(c.roomCode); c.roomCode = null;
-  if (room) { room.players = room.players.filter(n => n !== c.username); if (!room.players.length) rooms.delete(room.code); else broadcastRoom(room); }
+  if (room) { room.players = room.players.filter(n => n !== c.username); if (c.username) delete room.positions[c.username]; if (!room.players.length) rooms.delete(room.code); else { broadcastRoom(room); broadcastPositions(room); } }
   send(ws, { type: 'room_left' });
 }
 function enterRoom(ws, room) {
@@ -63,7 +64,7 @@ function createRoom(ws, maxPlayers = 10, mode = 'bomb') {
   const c = clients.get(ws); if (!c || !c.username) return error(ws, 'Сначала войди в аккаунт.');
   leaveRoom(ws);
   let code; do { code = randomCode(); } while (rooms.has(code));
-  const room = { code, mode: mode === 'hostage' ? 'hostage' : 'bomb', maxPlayers: Math.max(2, Math.min(10, Number(maxPlayers) || 10)), players: [] };
+  const room = { code, mode: mode === 'hostage' ? 'hostage' : 'bomb', maxPlayers: Math.max(2, Math.min(10, Number(maxPlayers) || 10)), players: [], positions: Object.create(null) };
   rooms.set(code, room); enterRoom(ws, room);
 }
 function sendStats(ws, username) { send(ws, { type: 'stats', stats: users[username].stats }); }
@@ -96,6 +97,16 @@ async function handle(ws, msg) {
     return enterRoom(ws, room);
   }
   if (msg.type === 'leave_room') return leaveRoom(ws);
+  if (msg.type === 'player_state') {
+    const c = clients.get(ws); const room = c?.roomCode && rooms.get(c.roomCode);
+    if (!room || !room.players.includes(username)) return error(ws, 'Сначала войди в комнату.');
+    const p = msg.position || {};
+    const nums = ['x','y','z','yaw','pitch'];
+    if (!nums.every(k => Number.isFinite(p[k])) || Math.abs(p.x)>100 || Math.abs(p.z)>100 || Math.abs(p.y)>20) return;
+    room.positions[username] = { x:p.x, y:p.y, z:p.z, yaw:p.yaw, pitch:p.pitch, at:Date.now() };
+    broadcastPositions(room); return;
+  }
+
   if (msg.type === 'quick_match') {
     leaveRoom(ws);
     const mode = msg.mode === 'hostage' ? 'hostage' : 'bomb';
