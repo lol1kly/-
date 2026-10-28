@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: cs2-bomb-mode-arena
-    runtime: node
-    buildCommand: npm install
-    startCommand: npm start
-    healthCheckPath: /healthz
