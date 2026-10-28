@@ -1,0 +1,3 @@
+node_modules/
+data/users.json
+data/users.json.tmp
